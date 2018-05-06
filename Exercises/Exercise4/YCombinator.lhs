@@ -1,12 +1,13 @@
 > import Prelude hiding (repeat, fix)
+> import Interpreter
 
 In class we defined the `Y`-combinator using a `newtype` and the function `fix :: (a -> a) -> a` definiert.
 There is a more convenient way using recursion.
 
 1. Give a definition of the `fix` using recursion.
 
-> fix :: (a -> a) -> a
-> fix = undefined
+> fixR :: (a -> a) -> a
+> fixR f = f (fixR f) 
 
 2. Define the functions `fib`, `append` and `repeat` by means of `fix`.
 
