@@ -36,7 +36,7 @@ Give implementations for the following functions using `Applicative`.
 Implement three example for usages of `filtering`.
 
 λ> filtering (Identity . even) [4..6]
-ExactlyOne [4,6]
+Identity [4,6]
 
 λ> filtering (\a -> if a > 13 then Nothing else Just (a <= 7)) [4..9]
 Just [4,5,6,7]
