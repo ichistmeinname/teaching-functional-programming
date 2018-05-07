@@ -68,7 +68,7 @@ x = 'x'
 y = 'y'
 z = 'z'
 
-fix = f :->: (x :->: Var f :@: (Var x :@: Var x))
+fixE = f :->: (x :->: Var f :@: (Var x :@: Var x))
               :@: (x :->: Var f :@: (Var x :@: Var x))
 
 -- Boole'sche Werte (Church-kodiert)

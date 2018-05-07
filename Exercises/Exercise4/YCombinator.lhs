@@ -6,16 +6,22 @@ There is a more convenient way using recursion.
 
 1. Give a definition of the `fix` using recursion.
 
-> fixR :: (a -> a) -> a
-> fixR f = f (fixR f) 
+> fix :: (a -> a) -> a
+> fix f = f (fix f)
 
 2. Define the functions `fib`, `append` and `repeat` by means of `fix`.
 
-> fib = undefined
-> append = undefined
-> repeat = undefined
+> fib = fix (\f -> \n -> if n < 2 then n else f (n-1) + f (n-2))
+> append = fix (\f -> \xs ys -> case xs of
+>                                []      -> ys
+>                                (z:zs)  -> z : f zs ys)
+> repeat = fix (\f -> \x -> x : f x)
+
+
 
 3. Can you also give the efficient (accumulator) version for `fib` using `fix`.
+
+> fibAcc = fix (\f -> \n np np1 -> if n == 0 then np else f (n-1) np1 (np + np1))
 
 **Remark:** In class we defined `fix` as follows.
 
