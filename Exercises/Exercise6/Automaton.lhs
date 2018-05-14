@@ -12,8 +12,8 @@ The Boolean value indicates if the current state is a final state. The list cont
 
 2. Implement a Haskell function that checks if the automaton accepts a given word.
 
-checkWord :: Eq a => Automaton a -> [a] -> Bool
-checkWord = undefined
+> checkWord :: Eq a => Automaton a -> [a] -> Bool
+> checkWord = undefined
 
 3. Transfer your implementation to Elm (or a strict language of your choice) using the ideas discussed in class to simulate non-strictness in strict languages. It is not necessary to use non-strictness for all components, so try to use non-strictness only where it's really needed.
 
