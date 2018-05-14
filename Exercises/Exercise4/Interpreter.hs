@@ -1,4 +1,4 @@
-module Interpreter where
+module Exercises.Exercise4.Interpreter where
 
 infixl 4 :@:  -- Applikation ist linksassoziativ und bindet stärker
 infixr 3 :->: -- Abstraktion rechtsassoziativ
