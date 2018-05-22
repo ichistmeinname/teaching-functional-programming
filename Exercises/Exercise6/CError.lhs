@@ -5,7 +5,7 @@ In class we defined `CMaybe r a` as a continuation-based version of the `Maybe` 
 > {-# Language MultiParamTypeClasses, FlexibleInstances #-}
 > module CError where
 
-> import Exercises.Exercise6.MonadError
+> import MonadError
 > import Control.Monad (ap)
 
 > -- you should change this data type definition, as this is only given in order to make the file compile

@@ -1,6 +1,6 @@
 {-# Language MultiParamTypeClasses, FlexibleInstances, FlexibleContexts #-}
 
-module Exercises.Exercise6.MonadError where
+module MonadError where
 
 import Prelude hiding ( catch )
 import Control.Monad (ap)
