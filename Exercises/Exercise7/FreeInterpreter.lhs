@@ -1,5 +1,9 @@
 > import Free
 
+> foldFree :: Functor f => (f b -> b) -> (a -> b) -> Free f a -> b
+> foldFree impure pure (Pure x) = pure x
+> foldFree impure pure (Impure fx) = impure (fmap (foldFree impure pure) fx)
+
 We have used arithmetic expression as example for nearly all topics introduced in the lecture. Free monads is no exception.
 
 One key essence of using a `Free` is that we have an AST-like representatin of a monadic program. The computations are not actually performed, but stacked via the `Impure`-constructor. That is, when we represent a monadic program using `Free` we can implement various interpreters for this program.
