@@ -1,3 +1,5 @@
+> {-# LANGUAGE FlexibleInstances #-}
+> 
 > import Free
 
 > foldFree :: Functor f => (f b -> b) -> (a -> b) -> Free f a -> b
@@ -56,13 +58,26 @@ With this DSL on top of `Free` we can define programs as follows.
 >   num 42
 >   end
 
+> program3 :: Free Calc ()
+> program3 = do
+>   num 1
+>   num 2
+>   add
+>   add
+>   end
+
+> program4 :: Free Calc ()
+> program4 = do
+>   num 1
+>   num 2
+>   add
+
 Using `foldFree` we can define intepretations of calculator-programs.
 
 1. Define an interpreter that transforms the `Free`-based program into our well-known `Expr` data type.
 
 > data Expr = Number Int
 >           | Expr :+: Expr
->           | Expr :*: Expr
 >  deriving Show
 
 > calcToExpr :: Calc ([Expr] -> Maybe Expr) -> [Expr] -> Maybe Expr
@@ -94,9 +109,20 @@ Using `foldFree` we can define intepretations of calculator-programs.
 > calcToString (Add r)   (x:y:acc) = r (x:"+":y:acc)
 > calcToString (Clear r) acc = r []
 > calcToString End       acc = concat acc
+> calcToString _ _ = "no output"
 
 > freeCalcToString :: Free Calc () -> String
 > freeCalcToString fx = foldFree calcToString (\_ _ -> "") fx []
+
+> calcToString2 :: Calc String -> String
+> calcToString2 (Num n r) = "Num " ++ show n ++ ";" ++ r
+> calcToString2 (Add r)   = "Add;" ++ r
+> calcToString2 (Clear r) = "C;" ++ r
+> calcToString2 End       = "End;"
+> calcToString2 _ = "no output"
+
+> freeCalcToString2 :: Free Calc () -> String
+> freeCalcToString2 fx = foldFree calcToString2 (\_ -> "") fx
 
 Some tests for the functions above.
   
@@ -112,3 +138,7 @@ Just 3
 Just (Number 42)
 λ> evalCalc program2
 Just 42
+λ> evalCalc program3
+Nothing
+λ> evalCalc program4
+Nothing
