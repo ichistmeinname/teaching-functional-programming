@@ -16,7 +16,7 @@ Implement a parser for the following XML data type.
 
 Define the corresponding Read instance and test your implementation with some examples.
 
-> instance Read XData wher
+> instance Read XData where
 >     readsPrec _ = undefined
 
 > test :: String
