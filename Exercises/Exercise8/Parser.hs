@@ -1,107 +1,85 @@
 module Parser where
 
-import Control.Monad
+import Control.Applicative (Alternative(..))
+import Control.Monad (MonadPlus(..), guard)
 
-import Prelude hiding ((<*>),(<*),(*>),(<$>))
+newtype Parser a = Parser { parser :: String -> [(a, String)] }
 
-infixl 3 <|>
-infixl 4 <*>,<*,*>
+instance Functor Parser where
+    fmap f (Parser p) = Parser $ \s -> (\(x, s') -> (f x, s')) <$> p s 
 
---import Parser
+instance Applicative Parser where
+    pure x = Parser $ \s -> pure (x, s) 
 
--- data Parser a
+    Parser fp <*> Parser p = 
+        Parser $ \s -> do
+            (f, s')   <- fp s
+            (x , s'') <- p s'
+            return (f x, s'') 
+    
+    Parser p *> Parser q = 
+        Parser $ \s -> do
+            (_, s') <- p s
+            q s'
 
--- parse :: Parser a -> String -> Maybe a
+    Parser p <* Parser q = 
+        Parser $ \s -> do
+            (x, s')  <- p s 
+            (_, s'') <- q s'
+            return (x, s'')
 
--- char :: Char -> Parser ()
+instance Alternative Parser where
+    empty = Parser (const []) 
 
--- empty :: Parser ()
+    Parser p <|> Parser q = Parser $ \s -> p s <|> q s
 
--- (*>) :: Parser a -> Parser b -> Parser b
+    many p = some p <|> pure []
 
--- (<*) :: Parser a -> Parser b -> Parser a
--- (<*) = flip (*>) ? No
+    some p = (:) <$> p <*> many p
 
--- (<|>) :: Parser a -> Parser a -> Parser a 
+instance Monad Parser where
+    return = pure
 
--- yield :: a -> Parser a
+    Parser p >>= f = 
+        Parser $ \s -> do 
+            (x, s') <- p s
+            let Parser q = f x
+            q s'
 
--- <*> :: Parser (a -> b) -> Parser a -> Parser b
-
-(<$>) :: (a -> b) -> Parser a -> Parser b
-f <$> p = yield f <*> p 
-
-nested :: Parser Int 
-nested = (\n m -> max (n + 1) m)
-     <$> (char '(' *> nested <* char ')') <*> nested
-     <|> yield 0
-
-aStar :: Parser Int
-aStar = (+1) <$> (char 'a' *> aStar) <|> yield 0  
-
--- anyChar :: Parser Char 
-
--- check :: (a -> Bool) -> Parser a -> Parser a
-
--- failure :: Parser ()
-
-
---char :: Char -> Parser ()
---char c = check (c==) anyChar *> empty
-
--- many should not be applied to parser, which match the empty word
-many :: Parser a -> Parser [a]
-many p = (:) <$> p <*> many p
-     <|> yield []
-
-
-anbn :: Parser Int
-anbn = (+1) <$> (char 'a' *> anbn <* char 'b')
-   <|> char 'a' *> char 'b' *> yield 1
-
-palindrom =
-      (check (\ (v1,v2) -> v1 == reverse v2)
-    $ (,)
-    <$> many anyChar <* optional anyChar <*> many anyChar
-     ) *> empty
-optional :: Parser a -> Parser ()
-optional p = p *> empty <|> empty
-
-type Parser a = String -> Maybe (a,String)
-
-anyChar :: Parser Char
-anyChar "" = Nothing
-anyChar (c:cs) = Just (c,cs)
-
-char c ""      = Nothing
-char c (c':cs) = if c==c' then Just ((),cs)
-                          else Nothing 
-
-p *> q = \s -> p s >>= \(_,s') -> q s'
-
-p <* q = \s -> p s >>= \(r,s') ->
-               q s' >>= \(_,s'') ->
-               return (r,s'')
-
-p <*> q = \s -> p s >>= \(f,s') ->
-                q s' >>= \(a,s'') ->
-                return (f a,s'')
-
-parse :: Parser a -> String -> Maybe a
-parse p s = case p s of
-              Just (r,"") -> Just r
-              _           -> Nothing
-
-empty :: Parser ()
-empty = \s -> Just ((),s)
-
-yield :: a -> Parser a
-yield x = \s -> Just (x,s)
-
+instance MonadPlus Parser where
+    mplus = (<|>)
+    mzero = empty
 
 check :: (a -> Bool) -> Parser a -> Parser a
-check p q = \s -> q s >>= \(r,s') ->
-                  guard (p r) >>
-                  return (r,s')
- 
-p <|> q = \s -> p s `mplus` q s
+check pred (Parser p) = 
+    Parser $ \s -> do
+    (x, s') <- p s
+    guard (pred x)
+    return (x, s')
+
+yield :: a -> Parser a 
+yield = pure
+
+parse :: Monad m => Parser a -> String -> m a
+parse p s = 
+    case dropWhile (not . null . snd) $ parser p s of
+        (x ,_):_ -> return x
+        _        -> fail "Parse error."
+
+char :: Char -> Parser ()
+char c = Parser $ \s ->
+    case s of
+        x:xs | c == x -> pure ((),xs)
+        _             -> empty
+
+anyChar :: Parser Char
+anyChar = Parser $ \s ->
+    case s of
+        c:cs -> pure (c,cs)
+        _    -> empty 
+
+word :: String -> Parser String
+word cs = foldr (\c cs' -> (:) <$>
+                  ((anyChar >>= guard . (== c)) *> return c) <*> cs')
+                (yield [])
+                cs
