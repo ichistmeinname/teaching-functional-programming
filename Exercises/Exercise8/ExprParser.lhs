@@ -123,7 +123,7 @@ The same application pattern applies to `Term`, `Expr1` and `Term1`.
 The overall Read instance can then be implemented by unwraping the `pExpr` parser.
 
 > instance Read Expr where
->     readsPrec _ = parser pExpr
+>     readsPrec _ = runParser pExpr
 
 Of course, it is reasonable to test our implementation.
 
@@ -144,7 +144,7 @@ A quick fix is to filter all whitespaces in the string to read.
 >     show (WSE e) = show e
 
 > instance Read WhitespaceExpr where
->     readsPrec _ = fmap (\(e,str) -> (WSE e,str)) . parser pExpr . filter (/= ' ')
+>     readsPrec _ = fmap (\(e,str) -> (WSE e,str)) . runParser pExpr . filter (/= ' ')
 
     λ> read "3 + 4*(5`div`3)" :: WhitespaceExpr
     (Number 3) :+: ((Number 4) :*: ((Number 5) :/: (Number 3)))

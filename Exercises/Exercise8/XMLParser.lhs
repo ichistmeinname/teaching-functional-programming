@@ -62,7 +62,7 @@ Due the definition of `many`, the only reasonable result is the one that is give
 So in the end, we do not have to consider other results.
 
 > instance Read XData where
->     readsPrec _ = take 1 . parser xData
+>     readsPrec _ = take 1 . runParser xData
 
 > test :: String
 > test = "<person first=\"Frank\" last=\"Huch\"><email>fhu@informatik.uni-kiel.de</email></person>"

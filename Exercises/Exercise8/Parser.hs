@@ -1,85 +1,106 @@
 module Parser where
 
-import Control.Applicative (Alternative(..))
-import Control.Monad (MonadPlus(..), guard)
+import Control.Applicative
 
-newtype Parser a = Parser { parser :: String -> [(a, String)] }
 
-instance Functor Parser where
-    fmap f (Parser p) = Parser $ \s -> (\(x, s') -> (f x, s')) <$> p s 
+newtype Parser a = Parser { runParser :: String -> [(a,String)] }
 
-instance Applicative Parser where
-    pure x = Parser $ \s -> pure (x, s) 
+parse :: Parser a -> String -> Maybe a
+parse p s = case filter (null . snd) $ runParser p s of
+              ((x,_):_) -> Just x
+              _         -> Nothing
 
-    Parser fp <*> Parser p = 
-        Parser $ \s -> do
-            (f, s')   <- fp s
-            (x , s'') <- p s'
-            return (f x, s'') 
-    
-    Parser p *> Parser q = 
-        Parser $ \s -> do
-            (_, s') <- p s
-            q s'
+failure :: Parser a
+failure = Parser (\_ -> [])
 
-    Parser p <* Parser q = 
-        Parser $ \s -> do
-            (x, s')  <- p s 
-            (_, s'') <- q s'
-            return (x, s'')
+yield :: a -> Parser a
+yield x = Parser (\s -> [(x,s)])
 
-instance Alternative Parser where
-    empty = Parser (const []) 
-
-    Parser p <|> Parser q = Parser $ \s -> p s <|> q s
-
-    many p = some p <|> pure []
-
-    some p = (:) <$> p <*> many p
-
-instance Monad Parser where
-    return = pure
-
-    Parser p >>= f = 
-        Parser $ \s -> do 
-            (x, s') <- p s
-            let Parser q = f x
-            q s'
-
-instance MonadPlus Parser where
-    mplus = (<|>)
-    mzero = empty
-
-check :: (a -> Bool) -> Parser a -> Parser a
-check pred (Parser p) = 
-    Parser $ \s -> do
-    (x, s') <- p s
-    guard (pred x)
-    return (x, s')
-
-yield :: a -> Parser a 
-yield = pure
-
-parse :: Monad m => Parser a -> String -> m a
-parse p s = 
-    case dropWhile (not . null . snd) $ parser p s of
-        (x ,_):_ -> return x
-        _        -> fail "Parse error."
-
-char :: Char -> Parser ()
-char c = Parser $ \s ->
-    case s of
-        x:xs | c == x -> pure ((),xs)
-        _             -> empty
+epsilon :: Parser ()
+epsilon = yield ()
 
 anyChar :: Parser Char
-anyChar = Parser $ \s ->
-    case s of
-        c:cs -> pure (c,cs)
-        _    -> empty 
+anyChar = Parser (\s -> case s of
+                          []     -> []
+                          (c:cs) -> [(c,cs)])
 
-word :: String -> Parser String
-word cs = foldr (\c cs' -> (:) <$>
-                  ((anyChar >>= guard . (== c)) *> return c) <*> cs')
-                (yield [])
-                cs
+check :: (a -> Bool) -> Parser a -> Parser a
+check ok p = Parser (filter (ok . fst) . runParser p)
+
+char :: Char -> Parser ()
+char c = check (c==) anyChar *> yield ()
+
+word :: String -> Parser ()
+word []     = epsilon
+word (c:cs) = char c *> word cs
+
+
+{-
+(<$>) :: (a -> b) -> Parser a -> Parser b
+f <$> p = Parser (map (\ (x,s) -> (f x,s)) . runParser p)
+-}
+--infixl 4 <*>, <*, *>
+
+{-
+(<*) :: Parser a -> Parser b -> Parser a
+p <* q = (\x _ -> x) <$> p <*> q
+
+(*>) :: Parser a -> Parser b -> Parser b
+p *> q = (\_ y -> y) <$> p <*> q
+-}
+
+infixl 1 *>=
+
+(*>=) :: Parser a -> (a -> Parser b) -> Parser b
+p *>= f  = Parser (\s -> [ (y,s2) | (x,s1) <- runParser p s,
+                                    (y,s2) <- runParser (f x) s1 ])
+
+instance Applicative Parser where
+  pure = yield
+  --(<*>) :: Parser (a -> b) -> Parser a -> Parser b
+  p <*> q = Parser (\s -> [ (f x, s2) | (f,s1) <- runParser p s,
+                                        (x,s2) <- runParser q s1 ])
+
+instance Monad Parser where
+  return = yield
+  (>>=)  = (*>=)
+
+{-
+many :: Parser a -> Parser [a]
+many p = some p <|> yield []
+
+some :: Parser a -> Parser [a]
+some p = (:) <$> p <*> many p
+-}
+
+instance Functor Parser where
+  fmap f p = Parser (map (\ (x,s) -> (f x,s)) . runParser p)
+
+{-
+class Applicative f => Alternative f where
+  empty :: f a
+
+  (<|>) :: f a -> f a -> f a
+  
+  some p = (:) <$> p <*> many p
+  
+  many p = some p <|> yield []
+-}
+
+-- optional :: Parser a -> Parser (Maybe a)
+-- optional p = Just <$> p  <|> yield Nothing
+
+instance Alternative Parser where
+
+  --empty :: Parser ()
+  empty = failure
+
+  --(<|>) :: Parser a -> Parser a -> Parser a
+  p <|> q = Parser (\s -> runParser p s ++ runParser q s)
+
+-- Maybe style version of <|>, which allows you to cut of
+-- alternatives, if the first parser matches.
+(<!>) :: Parser a -> Parser a -> Parser a
+p <!> q = Parser (\s -> case runParser p s of
+                          [] -> runParser q s
+                          xs -> xs)
