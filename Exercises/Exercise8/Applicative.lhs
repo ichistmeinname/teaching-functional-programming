@@ -49,122 +49,116 @@ apply the corresponding laws of the underlying components.
 
 In case of `Composed`, the proof are a bit more complicated.
 
-~~~{.haskell}
-  fmap id
-= {- Definition of fmap -}
-  Comp . fmap (fmap id) . composed
-= {- fmap id = id, with g Functor -}
-  Comp . fmap id . composed
-  {- fmap id = id, with f Functor -}
-= Comp . id . composed
-= Comp . composed
-= id
-
-  fmap (f . g)
-= Comp . fmap (fmap (f . g)) . composed
-= {- fmap homomorphism (inner) -}
-  Comp . fmap (fmap f . fmap g) . composed
-= {- fmap homomorphism (outer) -}
-  Comp . fmap (fmap f) . fmap (fmap g) . composed
-= fmap f . Comp . fmap (fmap g) . composed)
-= fmap f . fmap g . Comp. composed
-= fmap f . fmap g
-~~~
-
+      fmap id
+    = {- Definition of fmap -}
+      Comp . fmap (fmap id) . composed
+    = {- fmap id = id, with g Functor -}
+      Comp . fmap id . composed
+      {- fmap id = id, with f Functor -}
+    = Comp . id . composed
+    = Comp . composed
+    = id
+    
+      fmap (f . g)
+    = Comp . fmap (fmap (f . g)) . composed
+    = {- fmap homomorphism (inner) -}
+      Comp . fmap (fmap f . fmap g) . composed
+    = {- fmap homomorphism (outer) -}
+      Comp . fmap (fmap f) . fmap (fmap g) . composed
+    = fmap f . Comp . fmap (fmap g) . composed)
+    = fmap f . fmap g . Comp. composed
+    = fmap f . fmap g
+    
 So, now we have shown that `Composed` fulfills the functor laws.
 
-~~~{.haskell}
-  pure f <*> Comp x
-= {- Definition pure, (<*>) -}
-  Comp (pure (<*>) <*> (pure (pure f)) <*> x)
-= {- pure homomorph für f-}
-  Comp (pure((<*>) pure f) <*> x)
-= {- Funktor/Applicative für g -}
-  Comp (fmap ( (<*>) pure f) x)
-= {- partielle Applikation -}
-  Comp (fmap (pure f <*>) x)
-= {- (pure f <*>) = \y -> pure f <*> y = \y -> fmap f y = fmap f -}
-  Comp (fmap (fmap f) x)
-= {- Definition fmap -}
-  fmap f (Comp x)
-~~~
+      pure f <*> Comp x
+    = {- Definition pure, (<*>) -}
+      Comp (pure (<*>) <*> (pure (pure f)) <*> x)
+    = {- pure homomorph für f-}
+      Comp (pure((<*>) pure f) <*> x)
+    = {- Funktor/Applicative für g -}
+      Comp (fmap ( (<*>) pure f) x)
+    = {- partielle Applikation -}
+      Comp (fmap (pure f <*>) x)
+    = {- (pure f <*>) = \y -> pure f <*> y = \y -> fmap f y = fmap f -}
+      Comp (fmap (fmap f) x)
+    = {- Definition fmap -}
+      fmap f (Comp x)
 
 Now we now that `pure` and `fmap` behave as expected.
 
-For the applicative laws we reason as follows.
+For the applicative laws
 
-~~~{.haskell}
--- Composition:
-pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
+    -- Composition:
+    pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
+    
+    -- pure homomorphism:
+    pure f <*> pure x = pure (f x)
+    
+    -- exchance rule:
+    u <*> pure x = pure ($ x) <*> u
 
--- pure homomorphism:
-pure f <*> pure x = pure (f x)
+we reason as follows.
 
--- exchance rule:
-u <*> pure x = pure ($ x) <*> u
-~~~
-
-~~~{.haskell}
--- pure homomorphism:
-
-  pure f <*> pure x
-= {- Functor/Applicative-rule for Composed -}
-  fmap f (pure x)
-= {- Def. pure -}
-  fmap f (Comp (pure (pure x)))
-= {- Def. fmap -}
-  Comp (fmap (fmap f) (pure (pure x)))
-= {- Functor/Applicative for f -}
-  Comp (pure (fmap f) <*> pure (pure x))
-= {- pure homomorph -}
-  Comp (pure (fmap f (pure x)))
-= {- Functor/Applicative for g -}
-  Comp (pure (pure (f x)))
-= {- Def. pure -}
-  pure (f x)
-
--- exchange rule:
-
-  Comp f <*> pure x
-= {- Def. pure -}
-  Comp f <*> Comp (pure (pure x))
-= {- Def. (<*>) -}
-  Comp (pure (<*>) <*> f <*> pure (pure x))
-= {- exchange rule for f -}
-  Comp (pure ($ (pure x)) <*> (pure (<*>) <*> f))
-= {- composition for f -}
-  Comp (pure (.) <*> pure ($ (pure x)) <*> pure (<*>) <*> f)
-= {- pure/f homomorphism -}
-  Comp (pure ((.) ($ (pure x))) <*> pure (<*>) <*> f)
-= {- pure/f homomorphism -}
-  Comp (pure ((.) ($ (pure x)) (<*>)) <*> f)
-= {- reasoning on a side-note (*) -}
-  Comp (pure ((<*>) (pure ($ x))) <*> f)
-= {- pure/f homomorphism -}
-  Comp (pure (<*>) <*> pure (pure ($ x)) <*> f)
-= {- Def. (<*>) -}
-  Comp (pure (pure ($ x))) <*> Comp f
-= {- Def. pure -}
-  pure ($ x) <*> Comp f
-
-More details for (*):
-
-  (.) ($ (pure x)) (<*>)
-= {- Infix auf (.) -}
-  ($ (pure x)) . (<*>)
-= {- eta-expansion -}
-  \y -> ($ (pure x)) ((<*>) y)
-= {- ($ x) f = f x -}
-  \y -> (<*>) y (pure x)
-= {- infix for (<*>) -}
-  \y -> y <*> pure x
-= {- exchange rule for g -}
-  \y -> pure ($ x) <*> y
-= {- prefix for (<*>) -}
-  \y -> (<*>) (pure ($ x)) y
-= {- eta-reduction -}
-  (<*>) (pure ($ x))
-~~~
+    -- pure homomorphism:
+    
+      pure f <*> pure x
+    = {- Functor/Applicative-rule for Composed -}
+      fmap f (pure x)
+    = {- Def. pure -}
+      fmap f (Comp (pure (pure x)))
+    = {- Def. fmap -}
+      Comp (fmap (fmap f) (pure (pure x)))
+    = {- Functor/Applicative for f -}
+      Comp (pure (fmap f) <*> pure (pure x))
+    = {- pure homomorph -}
+      Comp (pure (fmap f (pure x)))
+    = {- Functor/Applicative for g -}
+      Comp (pure (pure (f x)))
+    = {- Def. pure -}
+      pure (f x)
+    
+    -- exchange rule:
+    
+      Comp f <*> pure x
+    = {- Def. pure -}
+      Comp f <*> Comp (pure (pure x))
+    = {- Def. (<*>) -}
+      Comp (pure (<*>) <*> f <*> pure (pure x))
+    = {- exchange rule for f -}
+      Comp (pure ($ (pure x)) <*> (pure (<*>) <*> f))
+    = {- composition for f -}
+      Comp (pure (.) <*> pure ($ (pure x)) <*> pure (<*>) <*> f)
+    = {- pure/f homomorphism -}
+      Comp (pure ((.) ($ (pure x))) <*> pure (<*>) <*> f)
+    = {- pure/f homomorphism -}
+      Comp (pure ((.) ($ (pure x)) (<*>)) <*> f)
+    = {- reasoning on a side-note (*) -}
+      Comp (pure ((<*>) (pure ($ x))) <*> f)
+    = {- pure/f homomorphism -}
+      Comp (pure (<*>) <*> pure (pure ($ x)) <*> f)
+    = {- Def. (<*>) -}
+      Comp (pure (pure ($ x))) <*> Comp f
+    = {- Def. pure -}
+      pure ($ x) <*> Comp f
+    
+    More details for (*):
+    
+      (.) ($ (pure x)) (<*>)
+    = {- Infix auf (.) -}
+      ($ (pure x)) . (<*>)
+    = {- eta-expansion -}
+      \y -> ($ (pure x)) ((<*>) y)
+    = {- ($ x) f = f x -}
+      \y -> (<*>) y (pure x)
+    = {- infix for (<*>) -}
+      \y -> y <*> pure x
+    = {- exchange rule for g -}
+      \y -> pure ($ x) <*> y
+    = {- prefix for (<*>) -}
+      \y -> (<*>) (pure ($ x)) y
+    = {- eta-reduction -}
+      (<*>) (pure ($ x))
 
 (2) Is it possible to define a instance of Monad for the data type Composed? If so, give an implementation, otherwise explain why this is not possible. How about Product?
 
@@ -182,32 +176,27 @@ to give a reasonable way to define `>>=`.
 In contrast, a monad instance for `Product` is indeed possible.
 Let us define the following helper functions to access one component of `Product`.
 
-~~~{.haskell}
-pfst :: Product f g a -> f a
-pfst = fst . pair
+> pfst :: Product f g a -> f a
+> pfst = fst . product
+>
+> psnd :: Product f g a -> g a
+> psnd = snd . product
 
-psnd :: Product f g a -> g a
-psnd = snd . pair
-~~~
+It holds the following equality.
 
-It holds that `Prod (pfst p, psnd p) = p`.
+    Prod (pfst p, psnd p) = p
+    
 Now, we can transfer the behavior to the corresponding components.
 
-~~~{.haskell}
-instance (Monad f, Monad g) => Monad (Product f g) where
-
-    return x = (return x, return x)
-
-    Prod (x, y) >>= f = Prod (x >>= pfst . f, y >>= psnd . f)
-~~~
+> instance (Monad f, Monad g) => Monad (Product f g) where
+>    return x = Prod (return x, return x)
+>    Prod (x, y) >>= f = Prod (x >>= pfst . f, y >>= psnd . f)
 
 On top of that, we can observe that the following equations hold.
 
-~~~{.haskell}
-pfst (Prod (x, y) >>= f) = pfst (Prod (x >>= pfst . f, y >>= psnd . f))
-                         = x >>= pfst . f
--- or shorter
-pfst (p >>= f) = pfst p >>= pfst . f
-~~~
+    pfst (Prod (x, y) >>= f) = pfst (Prod (x >>= pfst . f, y >>= psnd . f))
+                             = x >>= pfst . f
+    -- or shorter
+    pfst (p >>= f) = pfst p >>= pfst . f
 
 The analogue equation holds for `psnd` as well.
