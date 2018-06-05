@@ -97,7 +97,7 @@ The easiest rule is for 'Factor'.
 > pFactor :: Parser Expr
 > pFactor = char '(' *> pExpr <* char ')' <|> Number <$> pNumber
 
-An expression is then define by parsing an `Expr1` and apply a `Term` parser on the result.
+An expression is then defined by parsing an `Expr1` and apply a `Term` parser on the result.
 
 > -- Expr   ::= Term Expr1
 > pExpr :: Parser Expr
