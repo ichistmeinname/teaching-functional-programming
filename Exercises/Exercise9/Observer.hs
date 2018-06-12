@@ -1,4 +1,4 @@
-module Observer where
+module Observer (runO, o0, o1, o2, o3, o4, Observe(..), observe) where
 
 import Data.IORef
 import System.IO.Unsafe
@@ -52,11 +52,29 @@ o0 cons consName ref = unsafePerformIO $ do
   mkEvalTreeCons consName ref 0
   return cons
 
+o1 :: Observe a => (a -> b) -> String -> a -> EvalRef -> b
+o1 cons consName vA ref = unsafePerformIO $ do
+  [aRef] <- mkEvalTreeCons consName ref 1
+  return $ cons (observer vA aRef)
+
 o2 :: (Observe a, Observe b) => 
       (a -> b -> c) -> String -> a -> b -> EvalRef -> c
 o2 cons consName vA vB ref = unsafePerformIO $ do
   [refl,refr] <- mkEvalTreeCons consName ref 2
   return (cons (observer vA refl) (observer vB refr))
+
+o3 :: (Observe a, Observe b, Observe c)
+   => (a -> b -> c -> d) -> String -> a -> b -> c -> EvalRef -> d
+o3 cons consName vA vB vC ref = unsafePerformIO $ do
+  [aRef, bRef, cRef] <- mkEvalTreeCons consName ref 3
+  return $ cons (observer vA aRef) (observer vB bRef) (observer vC cRef)
+
+o4 :: (Observe a, Observe b, Observe c, Observe d)
+   => (a -> b -> c -> d -> e) -> String -> a -> b -> c -> d -> EvalRef -> e
+o4 cons consName vA vB vC vD ref = unsafePerformIO $ do
+  [aRef, bRef, cRef, dRef] <- mkEvalTreeCons consName ref 4
+  return $ cons (observer vA aRef) (observer vB bRef)
+                (observer vC cRef) (observer vD dRef)
 
 mkEvalTreeCons :: String -> EvalRef -> Int -> IO [EvalRef]
 mkEvalTreeCons consName ref arity = do

@@ -1,6 +1,11 @@
+> module Interactive where
+>
 > import Data.IORef
 > import System.IO.Unsafe
-> import Control.Exception 
+> import Control.Exception
+> import Data.List (intercalate, sort)
+> import Data.Maybe (fromJust)
+> import qualified Data.Map.Strict as Map (Map(..), insert, update, lookup, empty, elems, keys)
 > 
 > type EvalRef = IORef EvalTree
 > 
@@ -106,34 +111,11 @@
 > observer x ref = unsafePerformIO $ do
 >   writeIORef ref Demand
 >   return $ obs x ref
->
-
-The presenteed concept for debugging with observations presents all observations
-at the end of a computation in an unstructured manner.
-Implement an interactive presentation, which asks the user for a label and prints
-all observations for this label.
-This should be performed interactively within a loop.
-
-First think about how you should modify the data structure stored in the reference global.
- 
-> global :: IORef [IO ()]
-> global = unsafePerformIO $ newIORef []
-> 
-> observe :: Observe a => String -> a -> a
-> observe label x = unsafePerformIO $ do
->   ref <- newIORef Uneval
->   modifyIORef global (showInfo ref :)
->   return (observer x ref)
->     where
->       showInfo ref = do
->          putStrLn (label ++ "\n" ++ replicate (length label) '-')
->          showEvalRef ref >>= putStrLn
-> 
 > 
 > runO :: IO a -> IO ()
 > runO act = do
 >   catch (act>>return ()) (\(SomeException _) -> return ())
->   observations <- readIORef global
+>   observations <- readIORef global >>= return . Map.elems
 >   putStrLn ">>> Observations <<<"
 >   putStrLn "--------------------"
 >   sequence observations
@@ -147,6 +129,63 @@ First think about how you should modify the data structure stored in the referen
 >   
 > 
 > main = runO $ do
+>   let l = observe "list" $ repeat (42 ::Int)
+>   let fun = observe "take" take
+>   print (l !! 10)
+>   print (fun 5 l)
+>   print (length $ fun 2 [1::Int,2,3])
+>
+> global :: IORef (Map.Map String (IO ()))
+> global = unsafePerformIO $ newIORef Map.empty
+> 
+> observe :: Observe a => String -> a -> a
+> observe label x = unsafePerformIO $ do
+>   ref <- newIORef Uneval
+>   modifyIORef global (insertRefToMap ref)
+>   return (observer x ref)
+>     where
+>       insertRefToMap ref kvs =
+>           maybe (Map.insert label (showInfo ref) kvs)
+>                 (\act -> Map.insert label (act >> showInfo ref) kvs)
+>                 (Map.lookup label kvs)
+>       showInfo ref = do
+>          putStrLn (label ++ "\n" ++ replicate (length label) '-')
+>          showEvalRef ref >>= putStrLn
+>
+> runI :: IO a -> IO ()
+> runI act = do
+>  catch (act >> return ()) (\e -> putStrLn ("Runtime Error: " ++ show (e :: SomeException)))
+>  readIORef global >>= interactiveObs
+>
+> interactiveObs :: Map.Map String (IO ()) -> IO ()
+> interactiveObs obs = do
+>   putStr "Please enter a label, press return for a list of all labels, and use \":q\" to quit the interactive mode.\n"
+>   label <- getLine
+>   case label of
+>     ":q" -> return ()
+>     _ -> otherCommands label >> interactiveObs obs
+>  where
+>    otherCommands label
+>      | label == "" = printKnownLabels
+>      | not (label `elem` labels) = do
+>          putStrLn "The label is currenly not in the list of observed entities."
+>          printKnownLabels
+>       | otherwise = do
+>       putStrLn ">>> Observations <<<"
+>       putStrLn "--------------------"
+>       fromJust (Map.lookup label obs)
+>    printKnownLabels = putStrLn  ("Known labels are: " ++ intercalate "," (sort labels))
+>    labels = Map.keys obs
+
+
+> main2' = runI $ do
+>   let tree = observe "tree" $ Node (if 42 `div` 0 == 73 then Empty else Empty ) Empty
+>   print $ isNode tree
+>   let Node tl tr = tree
+>   print $ isNode tl
+>   
+> 
+> main' = runI $ do
 >   let l = observe "list" $ repeat (42 ::Int)
 >   let fun = observe "take" take
 >   print (l !! 10)
