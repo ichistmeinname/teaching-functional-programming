@@ -49,4 +49,9 @@ which uses type ArrayList a = [Bit a] as representation, as efficient as possibl
 Analyse the run time behaviour of your implementation.
 
 > replicate :: Int -> a -> ArrayList a
-> replicate = undefined
+> replicate n x = repl n (Leaf x)
+>  where repl 0 _ = emptyArrayList
+>        repl n x = (if even n then Zero else One x) : repl (n `div` 2) (x :+: x)
+
+The function's run time is logarithmic with respect to the given `n`.
+In each step, `n` is divided by two and the supplied `BinTree` is divided using `:+:`.

@@ -10,9 +10,14 @@ one for the smallest index of the given level and one for the difference with re
 to this smallest index. You can then compute the suitable index with both these parameters.
 
 > emptyArray :: Array a
-> emptyArray = Branch emptyArray
->                     (error "access to non-initialized element")
->                     emptyArray
+> emptyArray = mkEmptyArray 0 0
+>  where
+>   mkEmptyArray :: Int -> Int -> Array a
+>   mkEmptyArray smallest offset =
+>     Branch (mkEmptyArray (2 * smallest + 1) offset)
+>            (error ("Array.!: index " ++ show (smallest + offset)
+>                                      ++ " not initialized"))
+>            (mkEmptyArray (2 * smallest + 1) (smallest + offset + 1))
 > 
 > (!) :: Array a -> Int -> a
 > (Branch _ value _)    ! 0 = value
