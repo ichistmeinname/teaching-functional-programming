@@ -17,7 +17,7 @@ Then test your implementation for the following data structures:
 Array (simple implementation from the lecture)
 IntMap (Haskell library, improvement of the array implementation)
 
-> type Field = Array ()
+> type Field = Array Bool
 > type Field2 = I.IntMap ()
 
 Finally, you should compare your implementations with the variant on infinite lists.
