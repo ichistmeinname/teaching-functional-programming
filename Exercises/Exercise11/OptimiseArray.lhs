@@ -8,7 +8,7 @@ Compare the run-time of all implementations for accessing and modifying large ar
 > import qualified ArrayList     as A
 > import qualified ArrayListSafe as AS
 
-> (<!) :: AS.ArrayList a -> Int -> a
+> (<!) :: A.ArrayList a -> Int -> a
 > (<!) = undefined
 
 Implement the function `replicate :: Int -> a -> ArrayList` a for the safe implementation of array-lists. The run-time complexity should be as efficient as discussed in the last execise for the unsafe implementation.
