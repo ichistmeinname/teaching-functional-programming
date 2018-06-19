@@ -7,9 +7,6 @@ Compare the run-time of all implementations for accessing and modifying large ar
 
 > import qualified ArrayList     as A
 > import qualified ArrayListSafe as AS
-
-> modify :: Int -> (a -> a) -> A.ArrayList a -> A.ArrayList a
-> modify = undefined
 >
 > (<!) :: AS.ArrayList a -> Int -> a
 > (<!) = undefined
