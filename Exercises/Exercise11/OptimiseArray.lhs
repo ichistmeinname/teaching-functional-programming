@@ -7,7 +7,8 @@ Compare the run-time of all implementations for accessing and modifying large ar
 
 > import qualified ArrayList     as A
 > import qualified ArrayListSafe as AS
->
+
+> -- The type signature may be adjusted if needed
 > (<!) :: AS.ArrayList a -> Int -> a
 > (<!) = undefined
 
