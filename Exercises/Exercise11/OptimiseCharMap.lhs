@@ -4,25 +4,22 @@ Compare the execution time for operations on large trie structures. Give some me
 
 > import Prelude hiding (filter, lookup)
 > import Data.Map
-> import Data.IntMap
->
 
 Choose whatever import you like best.
 
 > type CharMap a = Map Char a
-> -- type CharMap a = IntMap a
 > 
 > emptyCharMap :: CharMap a
-> emptyCharMap = undefined
+> emptyCharMap = empty
 > 
 > lookupChar :: Char -> CharMap a -> Maybe a
-> lookupChar = undefined
+> lookupChar = lookup
 > 
 > insertChar :: Char -> a -> CharMap a -> CharMap a
-> insertChar = undefined
+> insertChar = insert
 > 
 > deleteChar :: Char -> CharMap a -> CharMap a
-> deleteChar = undefined
+> deleteChar = delete
 > 
 > updateChar :: Char -> (Maybe a -> Maybe a) -> CharMap a -> CharMap a
-> updateChar = undefined
+> updateChar = flip alter

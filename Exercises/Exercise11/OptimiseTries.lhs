@@ -19,4 +19,24 @@ Implement a variant of `deleteString`, such that these empty entries do not occu
 Hence, the above example should yield the "smaller" trie as result.
 
 > deleteString :: String -> T.StringMap a -> T.StringMap a
-> deleteString = undefined
+> deleteString []     (T.StringMap _ b) = T.StringMap Nothing b
+> deleteString (c:cs) (T.StringMap a b) =
+>   T.StringMap a (maybe b (\d -> let m = T.deleteString cs d
+>                                 in if isEmptyStringMap m
+>                                    then T.deleteChar c b
+>                                    else T.insertChar c m b)
+>                        (T.lookupChar c b))
+> 
+> 
+> isEmptyStringMap :: T.StringMap a -> Bool
+> isEmptyStringMap (T.StringMap Nothing m) = all (isEmptyStringMap . snd) m
+> isEmptyStringMap _                     = False
+> 
+> updateString :: String -> (Maybe a -> Maybe a) -> T.StringMap a -> T.StringMap a
+> updateString []     upd (T.StringMap a b) = T.StringMap (upd a) b
+> updateString (c:cs) upd (T.StringMap a b) =
+>   T.StringMap a (T.updateChar c
+>                 (prune . updateString cs upd . maybe T.emptyStringMap id)
+>                 b)
+>  where
+>   prune m = if isEmptyStringMap m then Nothing else Just m
