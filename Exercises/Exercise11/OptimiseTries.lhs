@@ -18,6 +18,8 @@ but keeps an empty entry with key "ab".
 Implement a variant of `deleteString`, such that these empty entries do not occur.
 Hence, the above example should yield the "smaller" trie as result.
 
+First, we adapt `deleteString` to remove empty trees.
+
 > deleteString :: String -> T.StringMap a -> T.StringMap a
 > deleteString []     (T.StringMap _ b) = T.StringMap Nothing b
 > deleteString (c:cs) (T.StringMap a b) =
@@ -26,12 +28,21 @@ Hence, the above example should yield the "smaller" trie as result.
 >                                    then T.deleteChar c b
 >                                    else T.insertChar c m b)
 >                        (T.lookupChar c b))
-> 
-> 
+
+That is, if we end up with an empty `StringMap` after deleting an entry, we do not insert
+it in the corresponding `CharMap`, but delete the entry in that `CharMap`.
+
+We can test if a `StringMap` is empty with the following predicate.
+
 > isEmptyStringMap :: T.StringMap a -> Bool
 > isEmptyStringMap (T.StringMap Nothing m) = all (isEmptyStringMap . snd) m
 > isEmptyStringMap _                     = False
-> 
+
+
+The idea applied to `deleteString` can also be used to modify `updateString` with respect
+to empty `StringMap`s.
+We supply `Nothing` to updateChar if the result of `updateString` yields an empty `StringMap`.
+
 > updateString :: String -> (Maybe a -> Maybe a) -> T.StringMap a -> T.StringMap a
 > updateString []     upd (T.StringMap a b) = T.StringMap (upd a) b
 > updateString (c:cs) upd (T.StringMap a b) =

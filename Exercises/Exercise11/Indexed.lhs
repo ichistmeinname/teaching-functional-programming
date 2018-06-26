@@ -10,7 +10,7 @@ Argue about the runtime complexity of each function.
 
 > import Prelude hiding (null, length, head, last, tail, init, reverse, replicate)
 > import qualified Prelude   as P
-> import qualified ArrayList as AL
+> import qualified ArrayListSafe as AL
 
 > data IdxDequeue a = IDQ Int Int (AL.ArrayList a) (AL.ArrayList a)
 >   deriving Show
@@ -51,7 +51,7 @@ Argue about the runtime complexity of each function.
 > tail (IDQ sx sy xs ys)
 >   | sx == 0   = empty
 >   | sx >= 2   = IDQ (sx - 1) sy (AL.rest xs) ys
->   | otherwise = IDQ (q + r)  q  (AL.fromList $ P.reverse vs) (AL.fromList us)
+>   | otherwise = IDQ (q + r)  q  (AL.listToArrayList $ P.reverse vs) (AL.listToArrayList us)
 >   where (q , r ) = sy `quotRem` 2
 >         (us, vs) = splitAt q $ AL.toList ys
 > 
@@ -81,8 +81,8 @@ Argue about the runtime complexity of each function.
 > (!) :: IdxDequeue a -> Int -> a
 > IDQ sx sy xs ys ! n = case getIndex sx sy n of
 >   Nothing        -> error $ "IdxDequeue.(!): bad index " ++ show n
->   Just (Left  i) -> xs AL.! i
->   Just (Right j) -> ys AL.! j
+>   Just (Left  i) -> xs AL.<! i
+>   Just (Right j) -> ys AL.<! j
 > 
 > -- O(log (|xs| + |ys|)
 > modify :: Int -> (a -> a) -> IdxDequeue a -> IdxDequeue a
@@ -97,34 +97,3 @@ Argue about the runtime complexity of each function.
 >                  | n < sx               = Just $ Left n
 >                  | otherwise            = Just $ Right $ total - n - 1
 >   where total = sx + sy
->
-
-We can define a Foldable instance for array lists using `foldr`
-
-> instance Foldable ArrayList where
->   foldr _ x0 Empty         = x0
->   foldr f x0 (NonEmpty tl) = foldr f x0 tl
-> 
-> instance Foldable TreeList where
->   foldr f x0 (Single x) = f x x0
->   foldr f x0 xs         = f y (foldr f x0 ys)
->     where (y, ys) = decons xs
-> 
-> toList :: ArrayList a -> [a]
-> toList = foldr (:) []
-
-The structures of type `[]` enable us to define `fmap` efficiently.
-Note that we shouldn't use `foldr` as reconstructing each constructor of the array list
-comes with a prize.
-
-> instance Functor ArrayList where
->   fmap _ Empty         = Empty
->   fmap f (NonEmpty tl) = NonEmpty $ fmap f tl
-> 
-> instance Functor TreeList where
->   fmap f (Single x) = Single $ f x
->   fmap f (x :< xs)  = fmap f x :< fmap (\(x', y) -> (f x', f y)) xs
-> 
-> instance Functor Bit where
->   fmap _ Zero    = Zero
->   fmap f (One x) = One $ f x

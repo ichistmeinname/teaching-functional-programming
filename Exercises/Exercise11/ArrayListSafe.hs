@@ -118,3 +118,23 @@ update' n f (Zero :< bs) = Zero :< update' (n `div` 2) f' bs
 update' 0 f (One x :< bs) = One (f x) :< bs
 update' n f (One x :< bs) = One x :< update' ((n-1) `div` 2) f' bs
      where f' (x,y) = if odd n then (f x,y) else (x,f y)
+
+replicate :: Int -> a -> ArrayList a
+replicate 0 _ = Empty
+replicate n x = NonEmpty $ repl n x
+
+repl :: Int -> a -> TreeList a
+repl 1 x = Single x
+repl n x = (if even n then Zero else One x) :< repl (n `div` 2) (x,x)
+
+instance Foldable ArrayList where
+  foldr _ x0 Empty         = x0
+  foldr f x0 (NonEmpty tl) = foldr f x0 tl
+
+instance Foldable TreeList where
+  foldr f x0 (Single x) = f x x0
+  foldr f x0 xs         = f y (foldr f x0 ys)
+    where (y, ys) = decons xs
+
+toList :: ArrayList a -> [a]
+toList = foldr (:) []

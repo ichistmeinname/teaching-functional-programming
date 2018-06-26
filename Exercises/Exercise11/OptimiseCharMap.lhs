@@ -5,6 +5,10 @@ Compare the execution time for operations on large trie structures. Give some me
 > import Prelude hiding (filter, lookup)
 > import Data.Map
 
+> import RandomPLZList
+> import Data.Char (chr)
+> import System.Environment (getArgs)
+
 Choose whatever import you like best.
 
 > type CharMap a = Map Char a
